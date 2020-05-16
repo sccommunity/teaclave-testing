@@ -57,6 +57,18 @@ where
 }
 
 #[macro_export]
+macro_rules! generate_runner {
+    ($matcher:expr) => {
+        pub fn run() -> bool {
+            $crate::run_partially($matcher)
+        }
+    };
+    () => {
+        generate_runner!(|_| true);
+    };
+}
+
+#[macro_export]
 macro_rules! run_tests {
     ($predicate:expr) => {{
         use std::prelude::v1::*;

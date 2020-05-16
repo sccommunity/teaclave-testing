@@ -5,11 +5,9 @@ extern crate sgx_tstd as std;
 //#[cfg(test)]
 #[cfg(feature = "with-testing")]
 pub mod tests {
-    use testing::test;
+    use testing::{generate_runner, test};
 
-    pub fn run() {
-        testing::run();
-    }
+    generate_runner!();
 
     #[test]
     fn it_works() {
