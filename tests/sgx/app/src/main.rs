@@ -54,14 +54,14 @@ fn main() {
         }
     };
 
-    let mut failures = 0u64;
-    let status = unsafe { ecall_run_tests(enclave.geteid(), &mut failures) };
+    let mut err = 0u64;
+    let status = unsafe { ecall_run_tests(enclave.geteid(), &mut err) };
     match status {
         sgx_status_t::SGX_SUCCESS => {}
         _ => panic!("[-] ecall_do_rsgx_test failed: {:?}!", status),
     }
 
-    assert_eq!(failures, 0, "testing got {} failed cases", failures);
+    assert_eq!(err, 0, "There are some failed test cases :(");
 
     enclave.destroy();
 }
