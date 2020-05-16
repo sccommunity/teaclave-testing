@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [ 'master', 'dev' ]
+  pull_request:
+    branches: [ 'master', 'dev' ]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-18.04
+    container: 
+      image: rust:1.43
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Rust toolchains
+      run: |
+        rustc --version &&
+        rustup --version &&
+        cargo --version
+      shell: bash
+    - name: Cache cargo registry
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
+    - name: Cache cargo index
+      uses: actions/cache@v1
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.toml') }}
+    - name: Run tests
+      run: cd tester; if [[ ! $(cargo run | tail -1 | grep '0 failed$') ]]; then exit 1; fi
+      shell: bash
