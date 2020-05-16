@@ -1,0 +1,21 @@
+[package]
+name = "testing"
+version = "0.1.0"
+authors = ["Teaclave Contributors <dev@teaclave.apache.org>"]
+description = "Teaclave test utility"
+license = "Apache-2.0"
+edition = "2018"
+
+[features]
+default = []
+sgx = ["sgx_tstd"]
+
+[dependencies]
+inventory   = "0.1.6"
+testing_proc_macro = { path = "./proc_macro" }
+
+[dependencies.sgx_tstd]
+features = ["backtrace"]
+git = "https://github.com/apache/teaclave-sgx-sdk"
+optional = true
+rev = "v1.1.2"
