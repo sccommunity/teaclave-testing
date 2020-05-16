@@ -31,7 +31,8 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
 
         inventory::submit!(
             testing::TestCase(
-                concat!(module_path!(), "::", stringify!(#f_ident)).to_string(),
+                //concat!(module_path!(), "::", stringify!(#f_ident)).to_string(),
+                std::string::ToString::to_string(concat!(module_path!(), "::", stringify!(#f_ident))),
                 #f_ident
             )
         );

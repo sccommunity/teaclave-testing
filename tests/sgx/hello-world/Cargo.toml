@@ -1,0 +1,21 @@
+[package]
+name = "hello-world"
+version = "0.1.0"
+authors = ["sammyne <lixiangmin01@baidu.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+# dependencies for testing
+inventory   = { version = "0.1.6", optional = true }
+testing =  { path = "../../..", optional = true }
+
+[dependencies.sgx_tstd]
+git = "https://github.com/apache/teaclave-sgx-sdk"
+rev = "v1.1.2"
+
+[features]
+default = []
+with-testing = ["inventory", "testing"]

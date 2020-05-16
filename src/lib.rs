@@ -15,8 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-#![cfg_attr(feature = "mesalock_sgx", no_std)]
-#[cfg(feature = "mesalock_sgx")]
+#![cfg_attr(feature = "sgx", no_std)]
+#[cfg(feature = "sgx")]
 #[macro_use]
 extern crate sgx_tstd as std;
 
@@ -31,9 +31,36 @@ pub use inventory::*;
 
 inventory::collect!(TestCase);
 
+pub fn run() -> bool {
+    run_partially(|_| true)
+}
+
+pub fn run_partially<F>(match_string: F) -> bool
+where
+    F: Fn(&str) -> bool,
+{
+    use std::prelude::v1::*;
+
+    crate::test_start();
+    let mut ntestcases: u64 = 0u64;
+    let mut failurecases: Vec<String> = Vec::new();
+
+    for t in inventory::iter::<TestCase>.into_iter() {
+        if !match_string(&t.0) {
+            continue;
+        }
+
+        crate::test(&mut ntestcases, &mut failurecases, t.1, &t.0);
+    }
+
+    crate::test_end(ntestcases, failurecases)
+}
+
 #[macro_export]
 macro_rules! run_tests {
     ($predicate:expr) => {{
+        use std::prelude::v1::*;
+
         $crate::test_start();
         let mut ntestcases: u64 = 0u64;
         let mut failurecases: Vec<String> = Vec::new();
