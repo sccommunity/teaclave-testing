@@ -2,6 +2,8 @@
 
 extern crate sgx_tstd as std;
 
+mod hello;
+
 //#[cfg(test)]
 #[cfg(feature = "with-testing")]
 pub mod tests {

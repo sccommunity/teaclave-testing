@@ -35,7 +35,8 @@ set(LDFLAGS "-Wl,--no-undefined \
 	-L${sgxLibPath} \
 	-Wl,--whole-archive -l${rtsLib} -Wl,--no-whole-archive \
 	-Wl,--start-group -l${cLib} -l${serviceLib} -l${cryptoLib} -l${cxxLib} \
-    -L${addonLibPath} -l${rustEnclaveLib} \
+    -L${addonLibPath} \
+	-Wl,--whole-archive -l${rustEnclaveLib} -Wl,--no-whole-archive \
     -Wl,--end-group \
     -Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-pie,-eenclave_entry \
     -Wl,--export-dynamic -Wl,--defsym,__ImageBase=0 -Wl,--gc-sections \

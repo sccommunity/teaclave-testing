@@ -68,6 +68,31 @@ macro_rules! generate_runner {
     };
 }
 
+// this macro seems unneccessary as temporary fix proposed at
+// https://github.com/apache/incubator-teaclave-sgx-sdk/issues/232#issuecomment-623804958
+/*
+#[macro_export]
+macro_rules! generate_runner_main {
+    (
+        //$($modules:path),* $(,)?
+        $modules:path
+    ) => {
+        pub fn run() -> bool {
+            // rename due to restriction that path cannot be followed by `::`
+            // @see https://doc.rust-lang.org/1.7.0/book/macros.html#syntactic-requirements
+            //{
+            //    use $modules as m;
+            //}
+            //m::run();
+
+            $crate::run_partially(|_| true);
+
+            true
+        }
+    };
+}
+*/
+
 #[macro_export]
 macro_rules! run_tests {
     ($predicate:expr) => {{
