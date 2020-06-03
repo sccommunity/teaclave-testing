@@ -25,11 +25,25 @@ use std::vec::Vec;
 
 pub use testing_proc_macro::test;
 
-pub struct TestCase(pub String, pub fn() -> ());
+pub struct TestCase {
+    pub id: String,
+    pub func: fn() -> (),
+    pub should_panic: Option<String>,
+}
 
 pub use inventory::*;
 
 inventory::collect!(TestCase);
+
+impl TestCase {
+    pub fn new(id: &str, func: fn() -> (), should_panic: Option<&str>) -> Self {
+        Self {
+            id: std::string::ToString::to_string(id),
+            func,
+            should_panic: should_panic.map(|s| std::string::ToString::to_string(s)),
+        }
+    }
+}
 
 pub fn run() -> bool {
     run_partially(|_| true)
@@ -41,19 +55,25 @@ where
 {
     use std::prelude::v1::*;
 
-    crate::test_start();
-    let mut ntestcases: u64 = 0u64;
+    crate::start(crate::iter::<TestCase>.into_iter().count());
+
+    //let mut ntestcases: u64 = 0u64;
+    let mut npassed = 0usize;
     let mut failurecases: Vec<String> = Vec::new();
 
-    for t in inventory::iter::<TestCase>.into_iter() {
-        if !match_string(&t.0) {
+    for c in crate::iter::<TestCase>.into_iter() {
+        if !match_string(&c.id) {
             continue;
         }
 
-        crate::test(&mut ntestcases, &mut failurecases, t.1, &t.0);
+        if crate::test(&c) {
+            npassed += 1;
+        } else {
+            failurecases.push(c.id.clone());
+        }
     }
 
-    crate::test_end(ntestcases, failurecases)
+    crate::end(npassed, failurecases)
 }
 
 #[macro_export]
@@ -93,18 +113,20 @@ macro_rules! generate_runner_main {
 }
 */
 
+/*
 #[macro_export]
 macro_rules! run_tests {
     ($predicate:expr) => {{
         use std::prelude::v1::*;
 
-        $crate::test_start();
+        $crate::start($crate::iter::<$crate::TestCase>.into_iter().count());
+
         let mut ntestcases: u64 = 0u64;
         let mut failurecases: Vec<String> = Vec::new();
 
         for t in $crate::iter::<$crate::TestCase>.into_iter() {
-            if $predicate(&t.0) {
-                $crate::test(&mut ntestcases, &mut failurecases, t.1, &t.0);
+            if $predicate(&t.id) {
+                $crate::test(&mut ntestcases, &mut failurecases, &t);
             }
         }
 
@@ -114,23 +136,24 @@ macro_rules! run_tests {
         run_tests!(|_| true);
     };
 }
+*/
 
-#[macro_export]
-macro_rules! should_panic {
-    ($fmt:expr) => {{
-        match ::std::panic::catch_unwind(|| $fmt).is_err() {
-            true => {
-                println!(
-                    "{} {} ... {}!",
-                    "testing_should_panic",
-                    stringify!($fmt),
-                    "\x1B[1;32mok\x1B[0m"
-                );
-            }
-            false => ::std::rt::begin_panic($fmt),
-        }
-    }};
-}
+//#[macro_export]
+//macro_rules! should_panic {
+//    ($fmt:expr) => {{
+//        match ::std::panic::catch_unwind(|| $fmt).is_err() {
+//            true => {
+//                println!(
+//                    "{} {} ... {}!",
+//                    "testing_should_panic",
+//                    stringify!($fmt),
+//                    "\x1B[1;32mok\x1B[0m"
+//                );
+//            }
+//            false => ::std::rt::begin_panic($fmt),
+//        }
+//    }};
+//}
 
 #[macro_export]
 macro_rules! check_all_passed {
@@ -164,13 +187,13 @@ macro_rules! run_tests {
 }
 */
 
-pub fn test_start() {
-    println!("\nstart running tests");
+pub fn start(n: usize) {
+    println!("\nrunning {} tests", n);
 }
 
-pub fn test_end(ntestcases: u64, failurecases: Vec<String>) -> bool {
-    let ntotal = ntestcases as usize;
-    let nsucc = ntestcases as usize - failurecases.len();
+pub fn end(npassed: usize, failurecases: Vec<String>) -> bool {
+    //let ntotal = ntestcases as usize;
+    //let nsucc = ntestcases as usize - failurecases.len();
 
     if !failurecases.is_empty() {
         print!("\nfailures: ");
@@ -182,34 +205,98 @@ pub fn test_end(ntestcases: u64, failurecases: Vec<String>) -> bool {
         );
     }
 
-    if ntotal == nsucc {
+    if failurecases.len() == 0 {
         print!("\ntest result \x1B[1;32mok\x1B[0m. ");
     } else {
         print!("\ntest result \x1B[1;31mFAILED\x1B[0m. ");
     }
 
-    println!(
-        "{} tested, {} passed, {} failed",
-        ntotal,
-        nsucc,
-        ntotal - nsucc
-    );
+    println!("{} passed; {} failed", npassed, failurecases.len(),);
     failurecases.is_empty()
 }
 
 #[allow(clippy::print_literal)]
-pub fn test<F, R>(ncases: &mut u64, failurecases: &mut Vec<String>, f: F, name: &str)
-where
-    F: FnOnce() -> R + std::panic::UnwindSafe,
-{
-    *ncases += 1;
+//pub fn test<F, R>(ncases: &mut u64, failurecases: &mut Vec<String>, f: F, name: &str)
+//where
+//    F: FnOnce() -> R + std::panic::UnwindSafe,
+//pub fn test(ncases: &mut u64, failurecases: &mut Vec<String>, c: &TestCase) bool {
+pub fn test(c: &TestCase) -> bool {
+    use std::panic;
+    use std::string::ToString;
+
+    //*ncases += 1;
+
     let t = || {
-        f();
+        (c.func)();
     };
-    if std::panic::catch_unwind(t).is_ok() {
-        println!("{} {} ... {}!", "testing", name, "\x1B[1;32mok\x1B[0m");
-    } else {
-        println!("{} {} ... {}!", "testing", name, "\x1B[1;31mfailed\x1B[0m");
-        failurecases.push(String::from(name));
+
+    if c.should_panic.is_none() {
+        let ok = std::panic::catch_unwind(t).is_ok();
+        if ok {
+            println!("test {} ... \x1B[1;32mok\x1B[0m", c.id);
+        } else {
+            println!("test {} ... \x1B[1;31mFAILED\x1B[0m", c.id);
+            //failurecases.push(c.id.clone());
+        }
+
+        return ok;
     }
+
+    // suppress panicking for should_panic
+    let panicker_backup = panic::take_panic_handler();
+    panic::set_panic_handler(|_| {});
+
+    let expected = c.should_panic.as_ref().unwrap();
+    let got = match std::panic::catch_unwind(t) {
+        Ok(_) => Some("missing panic".to_string()),
+        Err(err) => {
+            let mut got = None;
+            let done = match err.downcast_ref::<&str>() {
+                Some(v) if v.contains(expected) => true,
+                Some(v) => {
+                    //status = Some(format!("expect panicking '{}', got '{}'", expected, got));
+                    got = Some(v.to_string());
+                    true
+                }
+                None => false,
+            };
+
+            let done = done
+                || match err.downcast_ref::<String>() {
+                    Some(v) if v.contains(expected) => true,
+                    Some(v) => {
+                        //status = Some(format!("expect panicking '{}', got '{}'", expected, got));
+                        got = Some(v.to_string());
+                        true
+                    }
+                    None => false,
+                };
+
+            if !done {
+                got = Some("crate testing has missed your IMPORTANT edge case!!!!".to_string());
+            }
+
+            got
+        }
+    };
+
+    let ok = if let Some(msg) = got {
+        println!("test {} ... \x1B[1;31mFAILED\x1B[0m", c.id);
+        println!(
+            r#"    note: panic did not contain expected string
+          panic message: `"{}"`
+     expected substring: `"{}"`
+"#,
+            msg, expected
+        );
+        //failurecases.push(c.id.clone());
+        false
+    } else {
+        println!("test {} ... \x1B[1;32mok\x1B[0m", c.id);
+        true
+    };
+
+    panic::set_panic_handler(panicker_backup);
+
+    ok
 }

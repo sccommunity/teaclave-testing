@@ -3,6 +3,7 @@
 extern crate sgx_tstd as std;
 
 mod hello;
+mod panicking;
 
 //#[cfg(test)]
 #[cfg(feature = "with-testing")]
