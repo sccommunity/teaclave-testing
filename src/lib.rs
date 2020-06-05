@@ -32,8 +32,6 @@ pub struct TestCase {
     pub ignored: bool,
 }
 
-pub use inventory::*;
-
 inventory::collect!(TestCase);
 
 impl TestCase {
@@ -59,13 +57,13 @@ where
 {
     use std::prelude::v1::*;
 
-    crate::start(crate::iter::<TestCase>.into_iter().count());
+    crate::start(inventory::iter::<TestCase>.into_iter().count());
 
     let mut npassed = 0usize;
     let mut nignored = 0usize;
-    let mut failurecases: Vec<String> = Vec::new();
+    let mut failures: Vec<String> = Vec::new();
 
-    for c in crate::iter::<TestCase>.into_iter() {
+    for c in inventory::iter::<TestCase>.into_iter() {
         if !match_string(&c.id) {
             continue;
         } else if c.ignored {
@@ -77,11 +75,11 @@ where
         if crate::test(&c) {
             npassed += 1;
         } else {
-            failurecases.push(c.id.clone());
+            failures.push(c.id.clone());
         }
     }
 
-    crate::end(npassed, nignored, failurecases)
+    crate::end(npassed, nignored, failures)
 }
 
 #[macro_export]
@@ -121,48 +119,6 @@ macro_rules! generate_runner_main {
 }
 */
 
-/*
-#[macro_export]
-macro_rules! run_tests {
-    ($predicate:expr) => {{
-        use std::prelude::v1::*;
-
-        $crate::start($crate::iter::<$crate::TestCase>.into_iter().count());
-
-        let mut ntestcases: u64 = 0u64;
-        let mut failurecases: Vec<String> = Vec::new();
-
-        for t in $crate::iter::<$crate::TestCase>.into_iter() {
-            if $predicate(&t.id) {
-                $crate::test(&mut ntestcases, &mut failurecases, &t);
-            }
-        }
-
-        $crate::test_end(ntestcases, failurecases)
-    }};
-    () => {
-        run_tests!(|_| true);
-    };
-}
-*/
-
-//#[macro_export]
-//macro_rules! should_panic {
-//    ($fmt:expr) => {{
-//        match ::std::panic::catch_unwind(|| $fmt).is_err() {
-//            true => {
-//                println!(
-//                    "{} {} ... {}!",
-//                    "testing_should_panic",
-//                    stringify!($fmt),
-//                    "\x1B[1;32mok\x1B[0m"
-//                );
-//            }
-//            false => ::std::rt::begin_panic($fmt),
-//        }
-//    }};
-//}
-
 #[macro_export]
 macro_rules! check_all_passed {
     (
@@ -178,42 +134,18 @@ macro_rules! check_all_passed {
     }
 }
 
-/*
-#[macro_export]
-macro_rules! run_tests {
-    (
-        $($f : expr),* $(,)?
-    ) => {
-        {
-            teaclave_test_utils::test_start();
-            let mut ntestcases : u64 = 0u64;
-            let mut failurecases : Vec<String> = Vec::new();
-            $(teaclave_test_utils::test(&mut ntestcases, &mut failurecases, $f,stringify!($f));)*
-            teaclave_test_utils::test_end(ntestcases, failurecases)
-        }
-    }
-}
-*/
-
-pub fn start(n: usize) {
-    println!("\nrunning {} tests", n);
-}
-
-pub fn end(npassed: usize, nignored: usize, failurecases: Vec<String>) -> bool {
-    //let ntotal = ntestcases as usize;
-    //let nsucc = ntestcases as usize - failurecases.len();
-
-    if !failurecases.is_empty() {
+pub fn end(npassed: usize, nignored: usize, failures: Vec<String>) -> bool {
+    if !failures.is_empty() {
         print!("\nfailures: ");
         println!(
             "    {}",
-            failurecases
+            failures
                 .iter()
                 .fold(String::new(), |s, per| s + "\n    " + per)
         );
     }
 
-    if failurecases.len() == 0 {
+    if failures.len() == 0 {
         print!("\ntest result \x1B[1;32mok\x1B[0m. ");
     } else {
         print!("\ntest result \x1B[1;31mFAILED\x1B[0m. ");
@@ -222,22 +154,20 @@ pub fn end(npassed: usize, nignored: usize, failurecases: Vec<String>) -> bool {
     println!(
         "{} passed; {} failed; {} ignored",
         npassed,
-        failurecases.len(),
+        failures.len(),
         nignored
     );
-    failurecases.is_empty()
+    failures.is_empty()
+}
+
+pub fn start(n: usize) {
+    println!("\nrunning {} tests", n);
 }
 
 #[allow(clippy::print_literal)]
-//pub fn test<F, R>(ncases: &mut u64, failurecases: &mut Vec<String>, f: F, name: &str)
-//where
-//    F: FnOnce() -> R + std::panic::UnwindSafe,
-//pub fn test(ncases: &mut u64, failurecases: &mut Vec<String>, c: &TestCase) bool {
 pub fn test(c: &TestCase) -> bool {
     use std::panic;
     use std::string::ToString;
-
-    //*ncases += 1;
 
     let t = || {
         (c.func)();
@@ -249,7 +179,6 @@ pub fn test(c: &TestCase) -> bool {
             println!("test {} ... \x1B[1;32mok\x1B[0m", c.id);
         } else {
             println!("test {} ... \x1B[1;31mFAILED\x1B[0m", c.id);
-            //failurecases.push(c.id.clone());
         }
 
         return ok;
