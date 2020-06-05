@@ -29,6 +29,7 @@ pub struct TestCase {
     pub id: String,
     pub func: fn() -> (),
     pub should_panic: Option<String>,
+    pub ignored: bool,
 }
 
 pub use inventory::*;
@@ -36,11 +37,14 @@ pub use inventory::*;
 inventory::collect!(TestCase);
 
 impl TestCase {
-    pub fn new(id: &str, func: fn() -> (), should_panic: Option<&str>) -> Self {
+    pub fn new(id: &str, func: fn() -> (), should_panic: Option<&str>, ignored: bool) -> Self {
+        use std::string::ToString;
+
         Self {
-            id: std::string::ToString::to_string(id),
+            id: id.to_string(),
             func,
-            should_panic: should_panic.map(|s| std::string::ToString::to_string(s)),
+            should_panic: should_panic.map(|s| s.to_string()),
+            ignored,
         }
     }
 }
@@ -57,12 +61,16 @@ where
 
     crate::start(crate::iter::<TestCase>.into_iter().count());
 
-    //let mut ntestcases: u64 = 0u64;
     let mut npassed = 0usize;
+    let mut nignored = 0usize;
     let mut failurecases: Vec<String> = Vec::new();
 
     for c in crate::iter::<TestCase>.into_iter() {
         if !match_string(&c.id) {
+            continue;
+        } else if c.ignored {
+            nignored += 1;
+            println!("test {} ... \x1B[1;33mignore\x1B[0m", c.id);
             continue;
         }
 
@@ -73,7 +81,7 @@ where
         }
     }
 
-    crate::end(npassed, failurecases)
+    crate::end(npassed, nignored, failurecases)
 }
 
 #[macro_export]
@@ -191,7 +199,7 @@ pub fn start(n: usize) {
     println!("\nrunning {} tests", n);
 }
 
-pub fn end(npassed: usize, failurecases: Vec<String>) -> bool {
+pub fn end(npassed: usize, nignored: usize, failurecases: Vec<String>) -> bool {
     //let ntotal = ntestcases as usize;
     //let nsucc = ntestcases as usize - failurecases.len();
 
@@ -211,7 +219,12 @@ pub fn end(npassed: usize, failurecases: Vec<String>) -> bool {
         print!("\ntest result \x1B[1;31mFAILED\x1B[0m. ");
     }
 
-    println!("{} passed; {} failed", npassed, failurecases.len(),);
+    println!(
+        "{} passed; {} failed; {} ignored",
+        npassed,
+        failurecases.len(),
+        nignored
+    );
     failurecases.is_empty()
 }
 
@@ -244,6 +257,7 @@ pub fn test(c: &TestCase) -> bool {
 
     // suppress panicking for should_panic
     let panicker_backup = panic::take_panic_handler();
+    // @TODO: figure if it's possible to pass in something into this fn pointer
     panic::set_panic_handler(|_| {});
 
     let expected = c.should_panic.as_ref().unwrap();
@@ -254,7 +268,6 @@ pub fn test(c: &TestCase) -> bool {
             let done = match err.downcast_ref::<&str>() {
                 Some(v) if v.contains(expected) => true,
                 Some(v) => {
-                    //status = Some(format!("expect panicking '{}', got '{}'", expected, got));
                     got = Some(v.to_string());
                     true
                 }
@@ -265,7 +278,6 @@ pub fn test(c: &TestCase) -> bool {
                 || match err.downcast_ref::<String>() {
                     Some(v) if v.contains(expected) => true,
                     Some(v) => {
-                        //status = Some(format!("expect panicking '{}', got '{}'", expected, got));
                         got = Some(v.to_string());
                         true
                     }
@@ -289,7 +301,6 @@ pub fn test(c: &TestCase) -> bool {
 "#,
             msg, expected
         );
-        //failurecases.push(c.id.clone());
         false
     } else {
         println!("test {} ... \x1B[1;32mok\x1B[0m", c.id);

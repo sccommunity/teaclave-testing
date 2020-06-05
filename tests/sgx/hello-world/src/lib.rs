@@ -3,6 +3,7 @@
 extern crate sgx_tstd as std;
 
 mod hello;
+mod ignore;
 mod panicking;
 
 //#[cfg(test)]
@@ -15,5 +16,12 @@ pub mod tests {
     #[test]
     fn it_works() {
         assert_eq!(2 + 2, 4);
+    }
+
+    #[test]
+    #[should_panic]
+    #[ignore]
+    fn it_should_panic_but_ignore() {
+        panic!("I'm panicking but ignored");
     }
 }

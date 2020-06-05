@@ -23,13 +23,16 @@ use syn::ItemFn;
 use proc_macro::TokenStream;
 use regex::Regex;
 
+#[cfg(test)]
+mod tests;
+
 #[proc_macro_attribute]
 pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let tokens = input.to_string();
 
     let mut lines: Vec<&str> = tokens.split('\n').collect();
-    if lines.len() > 2 {
-        panic!("only #[should_panic(*)] and fn is supported now");
+    if lines.len() > 3 {
+        panic!("only '#[should_panic(*)]', '#[ignore]' and fn is supported now");
     }
 
     let token_fn: TokenStream = lines
@@ -38,21 +41,7 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
         .parse()
         .expect("invalid fn token stream");
 
-    //let other_attrs: Vec<proc_macro2::TokenStream> = lines.iter().map(|v| v.parse().unwrap()).collect();
-
-    let should_panic = if lines.len() != 0 {
-        let r = Regex::new(r#"#\[should_panic(\(expected\s*=\s*"(.*)"\))?\]"#).unwrap();
-        // @TODO: figure out the actual meaning of groups.len()
-        let expected = r
-            .captures(lines[0])
-            .expect("invalid #[should_panic] attribute")
-            .get(2)
-            .map_or("", |m| m.as_str());
-
-        quote! { Some(#expected) }
-    } else {
-        quote! { None }
-    };
+    let (should_panic, ignored) = figure_out_should_panic_and_ignored(&lines);
 
     let f = parse_macro_input!(token_fn as ItemFn);
     let f_ident = &f.sig.ident;
@@ -66,9 +55,43 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
                 concat!(module_path!(), "::", stringify!(#f_ident)),
                 #f_ident,
                 #should_panic,
+                #ignored,
             )
         );
     );
 
     q.into()
+}
+
+fn figure_out_should_panic_and_ignored(lines: &Vec<&str>) -> (proc_macro2::TokenStream, bool) {
+    let regex_should_panic =
+        Regex::new(r#"#\[should_panic(\(expected\s*=\s*"(.*)"\))?\]"#).unwrap();
+    const REGEX_IGNORED: &'static str = "#[ignore]";
+
+    let mut should_panic = None;
+    let mut ignored = false;
+    for line in lines {
+        if line == &REGEX_IGNORED {
+            ignored = !ignored || panic!("duplicate #[ignore]");
+            continue;
+        }
+
+        if should_panic.is_some() {
+            panic!("duplicate #[should_panic] or unsupported attributes");
+        }
+
+        // @TODO: figure out the actual meaning of groups.len()
+        if let Some(groups) = regex_should_panic.captures(line) {
+            let expected = groups.get(2).map_or("", |m| m.as_str());
+            should_panic = Some(expected);
+        }
+    }
+
+    let should_panic = if let Some(expected) = should_panic {
+        quote! { Some(#expected) }
+    } else {
+        quote! { None }
+    };
+
+    (should_panic, ignored)
 }
