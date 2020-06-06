@@ -34,6 +34,8 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
         Some(v) => tokens.split_at(v),
         None => ("", tokens.as_str()),
     };
+    let attrs = canonicalize_attributes(attrs);
+    let attrs = attrs.as_str();
 
     let token_fn: TokenStream = func.parse().expect("invalid 'fn' token stream");
 
@@ -62,6 +64,13 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
     );
 
     q.into()
+}
+
+// canonicalize_attributes canonicalized special characters in attrs.
+// Currently, following replacements are taken
+//   \" => "
+fn canonicalize_attributes(attrs: &str) -> String {
+    attrs.replace(r#"\""#, r#"""#)
 }
 
 fn figure_out_should_panic_and_ignored(attrs: &str) -> (Option<&str>, bool) {

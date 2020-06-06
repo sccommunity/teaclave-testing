@@ -20,6 +20,14 @@ fn match_should_panic() {
 world")]"#,
             "hello\nworld",
         ),
+        (
+            r#"#[should_panic(expected = "hello "world"")]"#,
+            "hello \"world\"",
+        ),
+        (
+            r#"#[should_panic(expected = "hello "world" ")]"#,
+            "hello \"world\" ",
+        ),
     ];
 
     // '.'  doesn't match newline as stated at https://docs.rs/regex/1.3.9/regex/index.html#matching-one-character
