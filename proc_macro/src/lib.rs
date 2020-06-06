@@ -30,18 +30,19 @@ mod tests;
 pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let tokens = input.to_string();
 
-    let mut lines: Vec<&str> = tokens.split('\n').collect();
-    if lines.len() > 3 {
-        panic!("only '#[should_panic(*)]', '#[ignore]' and fn is supported now");
-    }
+    let (attrs, func) = match tokens.find("\nfn") {
+        Some(v) => tokens.split_at(v),
+        None => ("", tokens.as_str()),
+    };
 
-    let token_fn: TokenStream = lines
-        .pop()
-        .expect("missing fn")
-        .parse()
-        .expect("invalid fn token stream");
+    let token_fn: TokenStream = func.parse().expect("invalid 'fn' token stream");
 
-    let (should_panic, ignored) = figure_out_should_panic_and_ignored(&lines);
+    let (should_panic, ignored) = figure_out_should_panic_and_ignored(attrs);
+    let should_panic = if let Some(expected) = should_panic {
+        quote! { Some(#expected) }
+    } else {
+        quote! { None }
+    };
 
     let f = parse_macro_input!(token_fn as ItemFn);
     let f_ident = &f.sig.ident;
@@ -63,35 +64,38 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
     q.into()
 }
 
-fn figure_out_should_panic_and_ignored(lines: &Vec<&str>) -> (proc_macro2::TokenStream, bool) {
-    let regex_should_panic =
-        Regex::new(r#"#\[should_panic(\(expected\s*=\s*"(.*)"\))?\]"#).unwrap();
-    const REGEX_IGNORED: &'static str = "#[ignore]";
+fn figure_out_should_panic_and_ignored(attrs: &str) -> (Option<&str>, bool) {
+    const SHOULD_PANIC: &str = r#"#\[should_panic(\(expected\s*=\s*"((?s).*)"\))?\]"#;
+    const IGNORE: &str = r"#\[ignore\]";
 
-    let mut should_panic = None;
-    let mut ignored = false;
-    for line in lines {
-        if line == &REGEX_IGNORED {
-            ignored = !ignored || panic!("duplicate #[ignore]");
-            continue;
-        }
+    {
+        // case: #[ignore] follows #[should_panic(*)]
+        let should_panic_then_ignore = format!(r"^{}\s*({})?$", SHOULD_PANIC, IGNORE);
+        let pattern = Regex::new(&should_panic_then_ignore).unwrap();
 
-        if should_panic.is_some() {
-            panic!("duplicate #[should_panic] or unsupported attributes");
-        }
+        if let Some(groups) = pattern.captures(attrs) {
+            let should_panic_expected = groups.get(2).map_or("", |m| m.as_str());
+            let ignored = groups.get(3).is_some();
 
-        // @TODO: figure out the actual meaning of groups.len()
-        if let Some(groups) = regex_should_panic.captures(line) {
-            let expected = groups.get(2).map_or("", |m| m.as_str());
-            should_panic = Some(expected);
+            return (Some(should_panic_expected), ignored);
         }
     }
 
-    let should_panic = if let Some(expected) = should_panic {
-        quote! { Some(#expected) }
-    } else {
-        quote! { None }
-    };
+    {
+        // case: #[should_panic(*)] follows #[ignore]
+        let ignore_then_should_panic = format!(r"^{}\s*({})?$", IGNORE, SHOULD_PANIC);
+        let pattern = Regex::new(&ignore_then_should_panic).unwrap();
 
-    (should_panic, ignored)
+        if let Some(groups) = pattern.captures(attrs) {
+            let should_panic_expected = if groups.get(1).is_some() {
+                Some(groups.get(2).map_or("", |m| m.as_str()))
+            } else {
+                None
+            };
+
+            return (should_panic_expected, true);
+        }
+    }
+
+    (None, false)
 }

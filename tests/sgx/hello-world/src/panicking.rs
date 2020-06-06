@@ -15,6 +15,12 @@ pub mod tests {
         panic!("I'm panicking");
     }
 
+    #[test]
+    #[should_panic(expected = "I'm a long long long long long long long long long long panic")]
+    fn long_long_should_panic() {
+        panic!("I'm a long long long long long long long long long long panic");
+    }
+
     //#[test]
     //#[should_panic(expected = "I'm hello")]
     //fn it_should_panic_and_expect_something_failed() {
