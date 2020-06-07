@@ -1,6 +1,6 @@
 # teaclave-testing 
 
-![build](https://github.com/sammyne/teaclave-testing/workflows/build/badge.svg?branch=master)
+![build](https://github.com/sammyne/teaclave-testing/workflows/build/badge.svg?branch=rsgx1.1.2)
 
 A crate helps to testing enclaves written based on the [teaclave-sgx-sdk][1].
 
@@ -27,7 +27,7 @@ take effects.
 Currently, the supported version of teaclave-sgx-sdk is [v1.1.2][2] only.
 
 ## Examples
-Please check the [source code](./tests/sgx/enclave/src/lib.rs) and [docs](./tests/sgx/README.md) to
+Please check the [source code](./tests/sgx/hello-world/src/lib.rs) and [docs](./tests/sgx/README.md) to
 see the crate's usage.
 
 > FYI: To avoid optimization (which will prune away some test cases) by the compiler, solution
