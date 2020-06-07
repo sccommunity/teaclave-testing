@@ -8,7 +8,7 @@ A crate helps to testing enclaves written based on the [teaclave-sgx-sdk][1].
 The official [sgx_unittest][4] helps us to write unit tests for crates ported to teaclave-sgx-sdk.
 The library crate is a great tool. The bad thing is that I'm too lazy to do the manual chores when
 using it in practice like official [samplecode][7]:( However, it can be bettered as suggested by
-[teaclave-sgx-sdk issue#232][3]. Thanks to the prototype implemented by [mssum][8], here comes my
+[teaclave-sgx-sdk issue#232][3]. Thanks to the [prototype][10] implemented by [mssum][8], here comes my
 implementation.
 
 When porting crates to teaclave-sgx-sdk, we should minimize the change to unit tests of the ported
@@ -48,4 +48,5 @@ see the crate's usage.
 [7]: https://github.com/apache/incubator-teaclave-sgx-sdk/blob/v1.1.2/samplecode/unit-test/enclave/src/lib.rs
 [8]: https://github.com/mssun
 [9]: https://github.com/sammyne/cargo-teaclave
+[10]: https://github.com/apache/incubator-teaclave/pull/269
 
