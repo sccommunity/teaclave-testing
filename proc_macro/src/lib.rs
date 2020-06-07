@@ -26,6 +26,17 @@ use regex::Regex;
 #[cfg(test)]
 mod tests;
 
+/// test parses the test function in pattern of
+///
+/// #[test]
+/// #[should_panic(expected = "...")]
+/// #[ignore]
+/// fn any_fn_name_your_like() {
+///     ...
+/// }
+///
+/// @dev the order of #[should_panic] and #[ignore] is interchangeable.
+/// @dev #[should_panic] and #[ignore] must comes after #[test] but not before
 #[proc_macro_attribute]
 pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let tokens = input.to_string();
