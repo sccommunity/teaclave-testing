@@ -41,3 +41,10 @@ pub mod tests {
         );
     }
 }
+
+#[cfg(feature = "with-testing")]
+use testing::test;
+
+#[test]
+fn i_am_not_within_tests_mod_but_will_run_if_with_testing() {
+}

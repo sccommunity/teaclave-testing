@@ -20,6 +20,8 @@ make test-sgx
 |-app           // the untrusted app to drive the enclave running
 |-enclave       // the crate serving as a bridge to package the ported crate into a enclave
 |-hello-world   // the ported crates to test
+|-hi            // a example to test the `#[cfg(feature = "with-testing")]` feature gate of the
+                // testing crate.
 ```
 
 ## Head Ups

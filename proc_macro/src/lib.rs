@@ -57,12 +57,18 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
         quote! { None }
     };
 
+    let with_testing_gate = quote! { #[cfg(feature = "with-testing")] };
+
     let f = parse_macro_input!(token_fn as ItemFn);
     let f_ident = &f.sig.ident;
     // I know no ways to make the line/column for panic number right =_=
     // even if adding back original attributes to occupy lines
     let q = quote!(
+        #with_testing_gate
+
         #f
+
+        #with_testing_gate
 
         inventory::submit!(
             testing::TestCase::new(
@@ -73,6 +79,8 @@ pub fn test(_attr: TokenStream, input: TokenStream) -> TokenStream {
             )
         );
     );
+
+    println!("{}", q);
 
     q.into()
 }
