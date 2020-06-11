@@ -40,11 +40,15 @@ pub mod tests {
             "hello-world-hello-world-hello-world-hello-world"
         );
     }
+
+    #[test]
+    fn test_conflicting_regex() {
+        let _ = regex::Regex::new("1");
+    }
 }
 
 #[cfg(feature = "with-testing")]
 use testing::test;
 
 #[test]
-fn i_am_not_within_tests_mod_but_will_run_if_with_testing() {
-}
+fn i_am_not_within_tests_mod_but_will_run_if_with_testing() {}

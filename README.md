@@ -36,6 +36,14 @@ see the crate's usage.
 ## Recommendation
 - [cargo-teaclave][9]: A tool helps to test teaclave-sgx-sdk-ported crates by generating testing drivers automatically
 
+## Heads Up
+- Since the local [`proc_macro`](./proc_macro/Cargo.toml) depends on `regex@=v1.3.9`, it would cause
+vendoring failed if your enclave crates depends the **EXACTLY** version of a 
+[teaclave-sgx-sdk][1]-ported variant of this `regex` crate. This is because cargo doesn't allow us
+vendor two crates bearing the **SAME** name and the **SAME** version.
+    > This is why we disable the default features of `regex` used by our `proc_macro` to make
+    > its as slim as possible, to avoid potential conflicts propogating to indirect dependencies.
+
 ## References
 - [teaclave-sgx-sdk issue#232][3]
 

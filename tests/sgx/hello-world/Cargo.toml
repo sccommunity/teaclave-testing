@@ -16,6 +16,9 @@ testing =  { path = "../../..", optional = true }
 git = "https://github.com/apache/teaclave-sgx-sdk"
 rev = "v1.1.2"
 
+[dependencies.regex]
+git = "https://github.com/mesalock-linux/regex-sgx"
+
 [features]
 default = []
 with-testing = ["inventory", "testing"]
